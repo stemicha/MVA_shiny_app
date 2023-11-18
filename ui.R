@@ -1,9 +1,9 @@
-library(colourpicker)
-library(shinydashboard)
-library(plotly)
-library(DT)
-library(shinyWidgets)
-library(bit64)
+suppressPackageStartupMessages(library(colourpicker))
+suppressPackageStartupMessages(library(shinydashboard))
+suppressPackageStartupMessages(library(plotly))
+suppressPackageStartupMessages(library(DT))
+suppressPackageStartupMessages(library(shinyWidgets))
+suppressPackageStartupMessages(library(bit64))
 
 dashboardPage(
   dashboardHeader(title = "PCA | HCPC | Clustering of data",titleWidth = 400),
@@ -47,7 +47,7 @@ dashboardPage(
                 menuItem("data transformation", tabName = "data transformation", icon = icon("bar-chart"),
                          materialSwitch(inputId = "logtrans", label = "Do log2 transformation of data?", status = "danger",value = FALSE,width = 400),
                          materialSwitch(inputId = "scaling", label = "Do scaling of data?", status = "danger",value = TRUE,width = 400),
-                         materialSwitch(inputId = "missval", label = "missing value imputation of data? (TRUE = replace missing values with HM [half-minimal value])", status = "danger",value = TRUE,width = 400)
+                         materialSwitch(inputId = "missval", label = "missing value imputation of data? (TRUE = replace missing values with half-minimal value)", status = "danger",value = FALSE,width = 400)
 
                 ),
       
@@ -70,6 +70,8 @@ dashboardPage(
       
       
       menuItem("downloads", tabName = "downloads", icon = icon("cloud-download"),
+               downloadButton('plots3D_PCA', '3D PCA plot',class="butt2"),
+               br(),
                downloadButton('plots2D_PCA', '2D PCA plots',class="butt2"),
                br(),
                downloadButton('plots2D_PCA_legend', '2D PCA legend',class="butt2"),
@@ -99,7 +101,7 @@ dashboardPage(
 
       #versioning
       tags$hr(),
-      em("version 1.4.6 | S. Michalik")
+      em("version 1.4.8 | S. Michalik")
       
       )
     
@@ -311,6 +313,13 @@ dashboardPage(
 
 #### to do !!!
 # drastic performance optimization ! split reactive element!!!
+
+#version: 1.4.8
+# bugfix: meta data to data table sorting to fix unsorted data bug (coloring ....)
+
+#version: 1.4.7
+# add download 3D PCA html
+# replace missing value from 0 to half-minimal value
 
 
 #version: 1.4.6

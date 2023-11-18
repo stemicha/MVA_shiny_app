@@ -19,7 +19,6 @@ library(DT)
 library(knitr)
 library(markdown)
 library(bit64)
-
 #load helper functions
 source(file.path("helper_functions/ggcorrplot_edited.R"))
 source(file.path("helper_functions/multiplot.R"))
@@ -27,20 +26,44 @@ source(file.path("helper_functions/ggplot_extract_legend.R"))
 #source(file.path("helper_functions/hcpc_plot_edited.R"))
 source(file.path("helper_functions/session_info_extract_pretty.R"))
 
+#source('~/Desktop/Shiny Projects/PCA_shiny/helper_functions/multiplot.R', encoding = 'UTF-8')
+#source('~/Desktop/Shiny Projects/PCA_shiny/helper_functions/ggcorrplot_edited.R', encoding = 'UTF-8')
+#Sys.setenv("plotly_username" = "stemicha")
+#Sys.setenv("plotly_api_key" = "jUPBMs7XEJVtumuVBSZ7")
 
+
+#input<-list(ellipses.level=0.95,ellipses.alpha=0.5,ellipses.method="norm",plot.point.size=2,show.mean.points=F,metrics="euclidean",sig.level=0.05,linkage="complete",corr.reorder=T,theme.cex=25,scaling=TRUE,file2=NULL,ellipses=T,ellipses.level=0.95,file1=NULL,inputButton=NULL,logtrans=T,shownam=T,corr.size=2,num.ele=10,missval=FALSE,meta.sele="strain",col1="orangered",colneutral="lightgrey",col1="dodgerblue",leg.lim=c(0.8,1),num.cluster=2)
 
 
 options(shiny.usecairo=TRUE,shiny.maxRequestSize=200*1024^2)
 
 shinyServer(function(input, output, session) {
   
- 
+
+  #example.meta<-read.table("PCA_shiny_check/4vs4/final_average_all_three_exponential_zero_to_na_meta.txt",sep="\t",header=T)
+  #example<-read.table("PCA_shiny_check/4vs4/final_average_all_three_exponential_zero_to_na.txt",sep="\t",header=T)
+  
+  
   example<-fread(file.path("data/#protein quantification_mean_peptide_intensities_Rho_cytoplasmic_qval_0-001.txt"),sep = "\t",header=T,data.table = F,na.strings = "NA")
   example[,-1]<-apply(example[,-1],2,function(x) log2(as.numeric(as.character(x))))
   
   example.meta<-fread(file.path("data/#protein quantification_mean_peptide_intensities_Rho_cytoplasmic_qval_0-001_META-data.txt"),sep = "\t",header=T,data.table = F)
   
-   
+    #setwd("~/Desktop/Shiny Projects/PCA_shiny")
+    #example<-fread(file.path("data/141025_Hypochlorid_Click_Ratios_median_norm.txt"),sep = "\t",header=T,data.table = F)
+    
+    #example<-fread(file.path("data/170721_intensities_MaxQuant_T4T4R_VK_PCA.txt"),sep = "\t",header=T,data.table = F)
+    #example<-fread(file.path("data/Hege_samples_IgG_calc_RESPONSE_FM3Dscript_version3.txt"),sep = "\t",header=T,data.table = F)
+    #example<-fread(file.path("data/AlexReder_Tiling_Array_data_cds_spike-in_norm.txt"),sep = "\t",header=T,data.table = F,na.strings = "NA")
+    #example<-fread(file.path("data/170717_LFQs_20percentpresent_final.txt"),sep = "\t",header=T,data.table = F,na.strings = "NA")
+    #example<-example[1:100,]
+    #example.meta<-fread(file.path("data/141025_Hypochlorid_Click_Ratios_median_norm_META_DATA.txt"),sep = "\t",header=T,data.table = F)
+    #example.meta<-fread(file.path("data/Hege_samples_IgG_calc_RESPONSE_FM3Dscript_version3_META_DATA.txt"),sep = "\t",header=T,data.table = F)
+    #example.meta<-fread(file.path("data/170721_group_anno_PCA.txt"),sep = "\t",header=T,data.table = F)
+    
+    #example.meta<-fread(file.path("data/AlexReder_Tiling_Array_data_cds_spike-in_norm_META_data.txt"),sep = "\t",header=T,data.table = F)
+    #example.meta<-fread(file.path("data/170717_LFQs_20percentpresent_metadaten_final.txt"),sep = "\t",header=T,data.table = F)
+    
     data <-  eventReactive(input$inputButton,{
       if(is.null(input$file1)){
             dataframe <- example          
@@ -68,7 +91,11 @@ shinyServer(function(input, output, session) {
     }) 
     
     
-      
+    #if(sum(data.meta()$sample==colnames(data()[,-1]))==c(ncol(data())-1)){
+    
+    #output table test
+    #output$table.test<-renderTable({data.frame(data())})
+    
     meta.names<-reactive({
       meta.in<-data.frame(data.meta())
       meta.select<-input$meta.sele
@@ -135,7 +162,7 @@ shinyServer(function(input, output, session) {
     # Increment the progress bar, and update the detail text.
     incProgress(1/8, detail = paste("prepare data..."))
     
-        table.in <- data.frame(data())
+        table.in <- as.data.frame(data())
         
         raw.dim<-dim(table.in)
         
@@ -143,6 +170,9 @@ shinyServer(function(input, output, session) {
         
         #table.in<-example
         #meta.in<-example.meta
+        #reorder table in to meta data
+        table.in <- table.in[,c(colnames(table.in)[1],meta.in[,1])]
+        
         
         colnames(meta.in)[1]<-"sample" # overwrite first column header to be more universal
         meta.in[,1]<-as.character(meta.in[,1]) #as factor important when numbers are used
@@ -164,7 +194,7 @@ shinyServer(function(input, output, session) {
                   used.col<-general.colors()[1:meta.select.number.of.elements]
                   }
         ## perform minimum imputation if missing values
-        if(input$missval) {table.in[is.na(table.in)]<-min(table.in[table.in!=0],na.rm=T)/2}else{table.in<-na.omit(table.in);row.nam <- rownames(table.in)} #only 100% valid values or missing value imputation lowest int
+        if(input$missval) {table.in[is.na(table.in)]<-min(unlist(table.in),na.rm=T)/2}else{table.in<-na.omit(table.in); row.nam <- rownames(table.in)} #only 100% valid values or missing value imputation lowest int
               
                 
                 #table.in[is.na(table.in)]<-min(table.in,na.rm=T)
@@ -428,21 +458,21 @@ shinyServer(function(input, output, session) {
     
     ###### render tables #######
     output$table.pca.interpret.dim1 <- renderDataTable({
-                                      dat <-  data.frame(pca()$pca.interpret$Dim.1)
+                                      dat <-  data.frame(pca()$pca.interpret$Dim.1$quanti)
                                       colnames(dat)<-c("correlation","p-value")
                                       dat[,1]<-round(dat[,1],digits = 3)
                                       dat[,2]<-format.pval(dat[,2])
                                       datatable(dat)
                                     })
     output$table.pca.interpret.dim2 <- renderDataTable({
-                                      dat <-  data.frame(pca()$pca.interpret$Dim.2)
+                                      dat <-  data.frame(pca()$pca.interpret$Dim.2$quanti)
                                       colnames(dat)<-c("correlation","p-value")
                                       dat[,1]<-round(dat[,1],digits = 3)
                                       dat[,2]<-format.pval(dat[,2])
                                       datatable(dat)
                                     })
     output$table.pca.interpret.dim3 <- renderDataTable({
-                                    dat <-  data.frame(pca()$pca.interpret$Dim.3)
+                                    dat <-  data.frame(pca()$pca.interpret$Dim.3$quanti)
                                     colnames(dat)<-c("correlation","p-value")
                                     dat[,1]<-round(dat[,1],digits = 3)
                                     dat[,2]<-format.pval(dat[,2])
@@ -547,6 +577,14 @@ shinyServer(function(input, output, session) {
     )
     
     
+    output$plots3D_PCA <- downloadHandler(
+      filename = function() {
+        paste(gsub(".txt","", input$file1),"_3D_plot_PCA_analysis.html",sep='')  },
+      content = function(file) {
+        saveWidget(widget =  pca()$plotly3d.facto.plot,file = file)
+      }
+    )
+    
     output$plots2D_PCA <- downloadHandler(
       filename = function() {
         paste(gsub(".txt","", input$file1),"_2D_plots_PCA_analysis.pdf",sep='')  },
@@ -640,16 +678,16 @@ shinyServer(function(input, output, session) {
    # )
     
     #session info output
-    output$sessioninfo <- renderUI({
-      if(!is.null(input$packages)) sapply(input$packages, function(x) eval(parse(text=paste0("library(",x,")"))))
-      includeRmd("SessionInfo.Rmd")
-    })
+   # output$sessioninfo <- renderUI({
+  #    if(!is.null(input$packages)) sapply(input$packages, function(x) eval(parse(text=paste0("library(",x,")"))))
+   #   includeRmd("SessionInfo.Rmd")
+  #  })
     
     
     output$helper.text.method<-renderUI({
         paste(c(
           paste("The principle component analysis was performed in R (",R.Version()$version.string,") using the factomineR package (version:",packageVersion("FactoMineR"),").",sep=""),
-          if(input$missval==T){paste("Missing values were replaced by 0.")}else{paste("Missing values were removed.")},
+          if(input$missval==T){paste("Missing values were replaced by half-minimal value.")}else{paste("Missing values were removed.")},
           if(input$scaling==F){paste("The data centering was done by subtracting the column means (omitting NAs) of the data from their corresponding columns.")
           }else{
             paste("The data centering was done by subtracting the column means (omitting NAs) of the data from their corresponding columns. To unify variances scaling of data was done by dividing the (centered) columns of the data by their standard deviations.")},
